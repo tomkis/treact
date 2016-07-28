@@ -5,8 +5,9 @@
   "main": "lib/index.js",
   "jsnext:main": "src/index.js",
   "scripts": {
-    "start": "./node_modules/.bin/webpack-dev-server --config example/webpack.config.babel.js --port 3000 --hot --content-base ./example",
-    "build:lib": "./node_modules/.bin/babel src --out-dir lib"
+    "build:lib": "./node_modules/.bin/babel src --out-dir lib",
+    "lint": "./node_modules/.bin/eslint ./src",
+    "start": "./node_modules/.bin/webpack-dev-server --config example/webpack.config.babel.js --port 3000 --hot --content-base ./example"
   },
   "repository": {
     "type": "git",
@@ -29,9 +30,15 @@
   "homepage": "https://github.com/tomkis1/treact#readme",
   "devDependencies": {
     "babel-cli": "^6.11.4",
+    "babel-eslint": "^6.1.2",
     "babel-loader": "^6.2.4",
     "babel-preset-es2015": "^6.9.0",
     "babel-preset-stage-0": "^6.5.0",
+    "eslint": "^2.9.0",
+    "eslint-config-airbnb": "^9.0.1",
+    "eslint-plugin-import": "^1.12.0",
+    "eslint-plugin-jsx-a11y": "^1.2.0",
+    "eslint-plugin-react": "^5.2.2",
     "webpack": "^1.13.1",
     "webpack-dev-server": "^1.14.1"
   }
