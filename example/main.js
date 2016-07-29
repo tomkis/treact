@@ -1,20 +1,13 @@
 import { createStore } from 'redux';
 import { h, createRender } from '../src/index';
 
-let memoizedOnClick = null;
-
 const View = ({ greeted, dispatch }) => {
-  // Obviously we don't want to change the handler with each render
-  if (!memoizedOnClick) {
-    memoizedOnClick = () => dispatch({ type: 'SayHi' });
-  }
-
   if (greeted) {
     return h('p', {}, [
       h('text', { text: 'Hello World!' })
     ]);
   } else {
-    return h('button', { onClick: memoizedOnClick }, [
+    return h('button', { onClick: () => dispatch({ type: 'SayHi' }) }, [
       h('text', { text: 'Say Hi!' })
     ]);
   }
@@ -47,4 +40,4 @@ const store = createStore((appState, action) => {
 
 // On any store change we call render again
 store.subscribe(() => doRender(store.getState(), store.dispatch));
-doRender();
+doRender(store.getState(), store.dispatch);
