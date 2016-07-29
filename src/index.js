@@ -1,3 +1,8 @@
+const PATCH_CREATE_NODE = 'create';
+const PATCH_REMOVE_NODE = 'remove';
+
+const flatMap = (list, mapper) => [].concat.apply([], list.map(mapper));
+
 /**
  * Creates HyperScriptish Element
  *
@@ -43,12 +48,50 @@ const createVDOM = element => {
   }
 };
 
+/**
+ * Creates a patch list by diffing two VDOM trees. It goes
+ * recursively over the entire tree and trying to find VDOM differences. The
+ * idea is perfectly described in the http://calendar.perfplanet.com/2013/diff/
+ * article written by @vjeux
+ */
+const diff = (
+  left,
+  right,
+  patches = [],
+  parentLeft = null
+) => {
+  if (!left) {
+    return [...patches, {
+      parent: parentLeft,
+      type: PATCH_CREATE_NODE,
+      node: right
+    }];
+  } else if (!right) {
+    return [...patches, {
+      type: PATCH_REMOVE_NODE,
+      node: left
+    }];
+  } else {
+    const children = left.children.length >= right.children.length ?
+      left.children :
+      right.children;
+
+    return flatMap(children, (child, index) => diff(
+      left.children[index],
+      right.children[index],
+      patches,
+      left
+    ));
+  }
+};
+
 export const createRender = domElement => {
   let lastVDOM = null;
 
   return element => {
     const vdom = createVDOM(element);
-    console.log(vdom);
+    const patches = diff(lastVDOM, vdom);
+    console.log(patches);
 
     lastVDOM = vdom;
   };
