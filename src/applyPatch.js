@@ -135,8 +135,8 @@ export default (patch, domRoot, eventHandlerRepository) => {
       if (patch.replacingNode.type === 'text') {
         const domNode = getPatchDomNode(patch.parent, domRoot);
         const textChildNode = ([...domNode.childNodes])
-          .find(child => child.nodeValue === patch.replacingNode.attributes.text);
-        textChildNode.nodeValue = patch.node.attributes.text;
+          .find(child => child.nodeValue === patch.replacingNode.attributes.text.toString());
+        textChildNode.nodeValue = patch.node.attributes.text.toString();
       } else {
         const domNode = getPatchDomNode(patch.replacingNode, domRoot);
         setHTMLAttributes(domNode, patch.node, eventHandlerRepository);
