@@ -1,6 +1,9 @@
 import * as PatchTypes from './patchTypes';
+import { ID_KEY } from './index';
 
-const ID_KEY = 'data-treact-id';
+const EVENT_HANDLERS = [
+  'onClick'
+];
 
 /**
  * Just convenient helper which re-maps
@@ -20,19 +23,47 @@ const mapAttributeToDomAttribute = attribute => {
 };
 
 /**
+ * Iterates over all the provided attributes and sets them to DOM Element.
+ * If the attribute is event, it's just stored in eventHandlerRepository
+ * for event delegation.
+ *
+ * @param {Element} DOM Element
+ * @param {Object} correlated vDOM node
+ * @param {Map} A map where its key is ID of the vDOM node and value is list of handlers
+ */
+const setHTMLAttributes = (domElement, vdomNode, eventHandlerRepository) => {
+  const attributes = Object.keys(vdomNode.attributes).map(attribute => ({
+    key: mapAttributeToDomAttribute(attribute),
+    value: vdomNode.attributes[attribute]
+  }));
+
+  const eventHandlers = attributes.filter(({ key }) => ~EVENT_HANDLERS.indexOf(key));
+  if (eventHandlers.length > 0) {
+    eventHandlerRepository.set(vdomNode.id, eventHandlers);
+  }
+
+  attributes
+    .filter(({ key }) => !~EVENT_HANDLERS.indexOf(key)) // set only non-event handlers attributes
+    .forEach(({ key, value }) => domElement.setAttribute(key, value));
+};
+
+/**
  * Creates DOM node specified by vDOM Node, the function is called
  * recursively so that entire subtree is created.
  *
  * @param {Object} vDOM node to be created
  * @param {Element} DOM Element used as mounting point for new node
+ * @param {Map} A map where its key is ID of the vDOM node and value is list of handlers
  */
-const createNodeRecursive = (vdomNode, domNode) => {
+const createNodeRecursive = (vdomNode, domNode, eventHandlerRepository) => {
   // Obviously we need to treat TextNode specially
   if (vdomNode.type === 'text') {
     const textNode = document.createTextNode(vdomNode.attributes.text);
     domNode.appendChild(textNode);
   } else {
     const domElement = document.createElement(vdomNode.type);
+    setHTMLAttributes(domElement, vdomNode, eventHandlerRepository);
+
     // Every created DOM element is tagged by ID so that
     // it's easy to correlate between DOM and vDOM
     domElement.setAttribute(ID_KEY, vdomNode.id);
@@ -40,7 +71,8 @@ const createNodeRecursive = (vdomNode, domNode) => {
 
     // Here comes the recursion, which
     // obviously doesn't make sense for text nodes
-    vdomNode.children.forEach(child => createNodeRecursive(child, domElement));
+    vdomNode.children.forEach(child =>
+      createNodeRecursive(child, domElement, eventHandlerRepository));
   }
 };
 
@@ -70,19 +102,23 @@ const getPatchDomNode = (vdomNode, domRoot) => {
  *
  * @param {Object} Patch to be applied on DOM
  * @param {Element} Root DOM Element
+ * @param {Map} A map where its key is ID of the vDOM node and value is list of handlers
  */
-export default (patch, domRoot) => {
+export default (patch, domRoot, eventHandlerRepository) => {
   switch (patch.type) {
     case PatchTypes.PATCH_CREATE_NODE: {
       // Creating DOM Node is recursive operation
       const domNode = getPatchDomNode(patch.parent, domRoot);
-      createNodeRecursive(patch.node, domNode);
+      createNodeRecursive(patch.node, domNode, eventHandlerRepository);
     }
       break;
 
     case PatchTypes.PATCH_REMOVE_NODE: {
       const domNode = getPatchDomNode(patch.node, domRoot);
       domNode.parentNode.removeChild(domNode);
+
+      // Remove all the assigned event handlers
+      eventHandlerRepository.delete(patch.node.id);
     }
       break;
 
@@ -91,7 +127,7 @@ export default (patch, domRoot) => {
       const domNode = getPatchDomNode(patch.replacingNode, domRoot);
       const parentDomNode = domNode.parentNode;
       parentDomNode.removeChild(domNode);
-      createNodeRecursive(patch.node, parentDomNode);
+      createNodeRecursive(patch.node, parentDomNode, eventHandlerRepository);
     }
       break;
 
@@ -103,15 +139,7 @@ export default (patch, domRoot) => {
         textChildNode.nodeValue = patch.node.attributes.text;
       } else {
         const domNode = getPatchDomNode(patch.replacingNode, domRoot);
-
-        // Let's create list of Pair<Key,Value> re-mapped DOM attributes
-        const attributes = Object.keys(patch.node.attributes).map(attribute => ({
-          key: mapAttributeToDomAttribute(attribute),
-          value: patch.node.attributes[attribute]
-        }));
-
-        // Just set all the attributes
-        attributes.forEach(({ key, value }) => domNode.setAttribute(key, value));
+        setHTMLAttributes(domNode, patch.node, eventHandlerRepository);
       }
     }
       break;
