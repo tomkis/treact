@@ -1,13 +1,9 @@
 var path = require('path');
-var webpack = require('webpack');
 
 module.exports = {
-  debug: true,
   target: 'web',
+  mode: 'development',
   devtool: 'sourcemap',
-  plugins: [
-    new webpack.NoErrorsPlugin()
-  ],
   entry: [
     'webpack-dev-server/client?http://localhost:3000',
     'webpack/hot/only-dev-server',
@@ -18,13 +14,10 @@ module.exports = {
     filename: 'app.js'
   },
   module: {
-    loaders: [{
+    rules: [{
       test: /\.jsx$|\.js$/,
       loaders: ['babel-loader'],
       include: path.resolve(__dirname, '../')
     }]
-  },
-  resolve: {
-    extensions: ['', '.js', '.jsx']
   }
 };
