@@ -107,7 +107,7 @@ export const createVDOM = (element, id = '.', stateRepository) => {
 
     // Execute the function (Component) and provide appropriate
     // properties as the function argument
-    const subtree = { id, ...newElement.type(element.props, stateRepository.skipPropCheck) };
+    const subtree = { id, ...element.type(element.props, stateRepository.skipPropCheck) };
 
     // Reset the context pointer
     stateRepository.componentId = null;
