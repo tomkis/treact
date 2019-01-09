@@ -1,43 +1,21 @@
-import { createStore } from 'redux';
-import { h, createRender } from '../src/index';
+import { h, createTreact } from '../src/index';
 
-const View = ({ greeted, dispatch }) => {
-  if (greeted) {
-    return h('p', {}, [
-      h('text', { text: 'Hello World!' })
-    ]);
-  } else {
-    return h('button', { onClick: () => dispatch({ type: 'SayHi' }) }, [
-      h('text', { text: 'Say Hi!' })
-    ]);
-  }
+const { render, useState } = createTreact(document.getElementById('app'));
+
+const Counter = () => {
+  const [value, setState] = useState(0);
+  const increment = () => {
+    setState(value + 1);
+  };
+
+  return h('button', { onClick: increment }, [
+    h('text', { text: value })
+  ]);
 };
 
-const render = createRender(document.getElementById('app'));
+const Root = () => h('div', {}, [
+  h(Counter, {}),
+  h(Counter, {})
+]);
 
-// This is obviously not ideal because it returns new reference of the
-// props on every render, but this affects only TOP level component.
-// So from performance perspective it is not a big deal.
-const doRender = (state, dispatch) => render(h(View, { ...state, dispatch }));
-
-// So the idea is that you would use some State container
-// and pass everything top-down through the Component hierarchy.
-// I used redux obviously here but this could as well be a single
-// mutable variable without any library.
-const store = createStore((appState, action) => {
-  switch (action.type) {
-    case 'SayHi':
-      return {
-        ...appState,
-        greeted: true
-      };
-    default:
-      return appState;
-  }
-}, {
-  greeted: false
-});
-
-// On any store change we call render again
-store.subscribe(() => doRender(store.getState(), store.dispatch));
-doRender(store.getState(), store.dispatch);
+render(h(Root, {}));

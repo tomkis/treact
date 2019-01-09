@@ -18,9 +18,9 @@ const memoizeComponent = fn => {
   let prevProps = null;
   let memoizedResult = null;
 
-  return nextProps => {
+  return (nextProps, skipPropCheck) => {
     // the component is called only when props changes
-    if (!shallowEqual(prevProps, nextProps)) {
+    if (skipPropCheck || !shallowEqual(prevProps, nextProps)) {
       memoizedResult = fn(nextProps);
       prevProps = nextProps;
 
@@ -90,20 +90,27 @@ export const h = (type, props = {}, children = []) => {
  * @param {object} HyperScriptish Element
  * @return {object} VDOM tree
  */
-export const createVDOM = (element, id = '.') => {
+export const createVDOM = (element, id = '.', stateRepository) => {
   // Let's call this function recursively over all the
   // Children
   const newElement = {
     ...element,
     id,
-    children: element.children.map((child, index) => createVDOM(child, `${id}${index}.`))
+    children:
+      element.children.map((child, index) => createVDOM(child, `${id}${index}.`, stateRepository))
   };
 
   // Is this Element Component?
   if (typeof element.type === 'function') {
+    // Set the pointer for current context
+    stateRepository.componentId = id;
+
     // Execute the function (Component) and provide appropriate
     // properties as the function argument
-    const subtree = newElement.type(element.props);
+    const subtree = { id, ...newElement.type(element.props, stateRepository.skipPropCheck) };
+
+    // Reset the context pointer
+    stateRepository.componentId = null;
 
     // Another nice performance optimization
     // No need to call the function down the tree
@@ -111,7 +118,7 @@ export const createVDOM = (element, id = '.') => {
     if (subtree.memoized) {
       return subtree;
     } else {
-      return createVDOM(subtree, id);
+      return createVDOM(subtree, id, stateRepository);
     }
   } else {
     // Plain DOM node can be returned untouched
